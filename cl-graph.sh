@@ -7,7 +7,7 @@ tempdir=$(mktemp -dt "cl-graph-${hashtag}-XXXXXXXX")
 changes_json_file="$tempdir/changes.json"
 
 # download list of CLs for the hashtag
-curl -s "https://android-review.googlesource.com/changes/?q=hashtag:%22${hashtag}%22" | tail -n -1 > "${changes_json_file}"
+curl -s "https://android-review.googlesource.com/changes/?q=hashtag:%22${hashtag}%22&o=SUBMIT_REQUIREMENTS" | tail -n -1 > "${changes_json_file}"
 
 # extract CL numbers
 numbers=$(<"${changes_json_file}" jq -r .[]._number)
@@ -36,6 +36,15 @@ for number in $numbers; do
 	# label CL
 	echo "\"$commit\" [label=\"$subject\"];"
 
+	# count failing checks
+	failing_checks=$(<"${changes_json_file}" jq -r ".[] | select(._number == $number).submit_requirements | map(.submittability_expression_result.status | select(. == \"FAIL\")) | length")
+	# mark ready-to-submit green
+	if [ "$failing_checks" == "0" ]; then
+		echo "\"$commit\" [fillcolor=\"lightgreen\" style=\"filled\"];"
+	elif [ "$failing_checks" == "1" ]; then
+		echo "\"$commit\" [fillcolor=\"lightyellow\" style=\"filled\"];"
+	fi
+
 	# assign CL to topic
 	if [ "$topic" != "null" ]; then
 		topic_commits["$topic"]+="\"$commit\";"
@@ -50,6 +59,7 @@ for number in $numbers; do
 		else
 			project=$(<${changes_json_file} jq -r ".[] | select(._number == $number).project")
 			echo "\"$commit\" -> \"${project}@HEAD\";"
+			echo "\"${project}@HEAD\" [fillcolor=\"lightblue\" style=\"filled\"];"
 		fi
 	done
 done
