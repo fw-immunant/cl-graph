@@ -1,6 +1,11 @@
 #!/bin/bash
 
-hashtag=trusty-kernel-rust
+if [ "$#" != "1" ]; then
+	echo "usage: $(basename $0) <gerrit hashtag>" > /dev/stderr
+	exit 1
+fi;
+
+hashtag=${1}
 
 tempdir=$(mktemp -dt "cl-graph-${hashtag}-XXXXXXXX")
 
