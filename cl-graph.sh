@@ -41,13 +41,20 @@ for number in $numbers; do
 	# label CL
 	echo "\"$commit\" [label=\"$subject\"];"
 
-	# count failing checks
-	failing_checks=$(<"${changes_json_file}" jq -r ".[] | select(._number == $number).submit_requirements | map(.submittability_expression_result.status | select(. == \"FAIL\")) | length")
-	# mark ready-to-submit green
-	if [ "$failing_checks" == "0" ]; then
-		echo "\"$commit\" [fillcolor=\"lightgreen\" style=\"filled\"];"
-	elif [ "$failing_checks" == "1" ]; then
-		echo "\"$commit\" [fillcolor=\"lightyellow\" style=\"filled\"];"
+	# find status
+	status=$(<"${changes_json_file}" jq -r ".[] | select(._number == $number).status")
+	if [ "$status" == "MERGED" ]; then
+		# mark merged blue
+		echo "\"$commit\" [fillcolor=\"lightblue\" style=\"filled\"];"
+	else
+		# count failing checks
+		failing_checks=$(<"${changes_json_file}" jq -r ".[] | select(._number == $number).submit_requirements | map(.submittability_expression_result.status | select(. == \"FAIL\")) | length")
+		# mark ready-to-submit green
+		if [ "$failing_checks" == "0" ]; then
+			echo "\"$commit\" [fillcolor=\"lightgreen\" style=\"filled\"];"
+		elif [ "$failing_checks" == "1" ]; then
+			echo "\"$commit\" [fillcolor=\"lightyellow\" style=\"filled\"];"
+		fi
 	fi
 
 	# assign CL to topic
